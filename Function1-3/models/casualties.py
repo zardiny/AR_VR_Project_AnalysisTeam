@@ -358,8 +358,9 @@ def estimate_casualties_vectorized(
     """
     Estimate deterministic casualties at building and block levels.
 
-    Buildings are aggregated using unrounded expectations, then block estimates
-    are rounded once. Blocks without assigned buildings use the global
+    Building-level estimates remain unrounded expected counts. They are
+    aggregated using these exact expectations, then block estimates are
+    rounded once. Blocks without assigned buildings use the global
     population-weighted casualty-rate fallback.
     """
     periods = (
@@ -514,26 +515,12 @@ def estimate_casualties_vectorized(
                 numerator / denominator if denominator > 0 else np.nan
             )
 
-    # Preserve raw expectations for aggregation before building-level rounding.
+    # Preserve exact expected casualty counts at building level.
+    # These unrounded values are also used for block-level aggregation.
     raw_building_results = {
         key: values.copy()
         for key, values in building_results.items()
     }
-
-    # Building outputs are integer counts; each building respects its own cap.
-    for period in periods:
-        keys = [
-            f"{period}_{severity}_est"
-            for severity in severities
-        ]
-        values = np.column_stack([building_results[key] for key in keys])
-        rounded = round_severity_counts(
-            values,
-            population_by_period[period],
-        )
-
-        for severity_index, key in enumerate(keys):
-            building_results[key] = rounded[:, severity_index]
 
     building_counts = np.bincount(group_pos[assigned], minlength=n_blocks)
     valid_counts = np.bincount(

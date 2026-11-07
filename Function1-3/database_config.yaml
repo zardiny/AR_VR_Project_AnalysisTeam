@@ -3,7 +3,7 @@ database:
   port: 5432
   name: earthquake
   user: postgres
-  password: ""
+  password: "MOSlem75"
 
 schema:
   name: gis
